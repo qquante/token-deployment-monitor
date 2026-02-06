@@ -1,0 +1,112 @@
+# =============================================================================
+# bankr-v2 — Docker Compose
+# =============================================================================
+
+services:
+  # --- FastAPI Server ---
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # --- Redis ---
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # --- On-Chain Listener ---
+  worker-onchain:
+    build:
+      context: .
+      dockerfile: Dockerfile.workers
+    command: python -m workers.onchain_listener
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- Trading Executor ---
+  worker-trading:
+    build:
+      context: .
+      dockerfile: Dockerfile.workers
+    command: python -m workers.trading_executor
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- Token Watcher ---
+  worker-token-watcher:
+    build:
+      context: .
+      dockerfile: Dockerfile.workers
+    command: python -m workers.token_watcher
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- Twitter Listener ---
+  worker-twitter:
+    build:
+      context: .
+      dockerfile: Dockerfile.workers
+    command: python -m workers.twitter_listener
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- Tweet Processor ---
+  worker-tweet-processor:
+    build:
+      context: .
+      dockerfile: Dockerfile.workers
+    command: python -m workers.tweet_processor
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- Telegram Handler ---
+  worker-telegram:
+    build:
+      context: .
+      dockerfile: Dockerfile.workers
+    command: python -m workers.telegram_handler
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  redis_data:

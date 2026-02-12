@@ -8,9 +8,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.api
-    ports:
-      - "8000:8000"
     env_file: .env
+    network_mode: host
     depends_on:
       redis:
         condition: service_healthy
@@ -25,7 +24,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6399:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
@@ -43,18 +42,37 @@ services:
       dockerfile: Dockerfile.workers
     command: python -m workers.onchain_listener
     env_file: .env
+    network_mode: host
     depends_on:
       redis:
         condition: service_healthy
     restart: unless-stopped
 
-  # --- Trading Executor ---
-  worker-trading:
+  # --- Trading Executor: Bankr ---
+  worker-trading-bankr:
     build:
       context: .
       dockerfile: Dockerfile.workers
     command: python -m workers.trading_executor
     env_file: .env
+    environment:
+      - TRADING_PLATFORM=bankr
+    network_mode: host
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- Trading Executor: Clanker ---
+  worker-trading-clanker:
+    build:
+      context: .
+      dockerfile: Dockerfile.workers
+    command: python -m workers.trading_executor
+    env_file: .env
+    environment:
+      - TRADING_PLATFORM=clanker
+    network_mode: host
     depends_on:
       redis:
         condition: service_healthy
@@ -67,6 +85,7 @@ services:
       dockerfile: Dockerfile.workers
     command: python -m workers.token_watcher
     env_file: .env
+    network_mode: host
     depends_on:
       redis:
         condition: service_healthy
@@ -79,6 +98,7 @@ services:
       dockerfile: Dockerfile.workers
     command: python -m workers.twitter_listener
     env_file: .env
+    network_mode: host
     depends_on:
       redis:
         condition: service_healthy
@@ -91,6 +111,7 @@ services:
       dockerfile: Dockerfile.workers
     command: python -m workers.tweet_processor
     env_file: .env
+    network_mode: host
     depends_on:
       redis:
         condition: service_healthy
@@ -103,6 +124,20 @@ services:
       dockerfile: Dockerfile.workers
     command: python -m workers.telegram_handler
     env_file: .env
+    network_mode: host
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- Telegram Progressive ---
+  worker-telegram-progressive:
+    build:
+      context: .
+      dockerfile: Dockerfile.workers
+    command: python -m workers.telegram_progressive
+    env_file: .env
+    network_mode: host
     depends_on:
       redis:
         condition: service_healthy

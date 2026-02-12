@@ -542,6 +542,7 @@ class OnchainListenerWorker(BaseWorker):
             pre_uri = (tx_metadata or {}).get("uri", "")
             pre_pool_id = (tx_metadata or {}).get("pool_id", "")
             pre_pool_fee = int((tx_metadata or {}).get("pool_fee", 0))
+            pre_pool_hook = (tx_metadata or {}).get("pool_hook", "")
 
             # ---- Build event and publish INSTANTLY ----
             event = Events.token_created(
@@ -563,7 +564,8 @@ class OnchainListenerWorker(BaseWorker):
             event["interface"] = "Bankr"
             event["tweet_username"] = ""
             event["mev_module"] = ""
-            event["pool_hook"] = BANKR_HOOK.lower()
+            pre_pool_hook = (tx_metadata or {}).get("pool_hook", "")
+            event["pool_hook"] = pre_pool_hook.lower() if pre_pool_hook else BANKR_HOOK.lower()
             event["paired_token"] = "0x4200000000000000000000000000000000000006"
             event["locker"] = locker_address
             event["starting_tick"] = 0
@@ -599,6 +601,7 @@ class OnchainListenerWorker(BaseWorker):
                     pre_uri=pre_uri,
                     pre_pool_id=pre_pool_id,
                     pre_pool_fee=pre_pool_fee,
+                    pre_pool_hook=pre_pool_hook,
                 )
             )
 
@@ -632,6 +635,7 @@ class OnchainListenerWorker(BaseWorker):
         pre_uri: str = "",
         pre_pool_id: str = "",
         pre_pool_fee: int = 0,
+        pre_pool_hook: str = "",
     ) -> None:
         """Fetch metadata and publish updates.
 
@@ -654,14 +658,17 @@ class OnchainListenerWorker(BaseWorker):
             token_uri = pre_uri
             pool_id = pre_pool_id
             pool_fee = pre_pool_fee
+            pool_hook = pre_pool_hook
 
             if token_uri:
                 # LIGHTSPEED: URI already known from TX calldata.
                 # Still need pool_id if not parsed from receipt.
                 if not pool_id:
-                    pool_id, pool_fee = await self._fetch_pool_id_from_receipt(
+                    pool_id, pool_fee, pool_hook_rpc = await self._fetch_pool_id_from_receipt(
                         rpc_url, tx_hash
                     )
+                    if pool_hook_rpc and not pool_hook:
+                        pool_hook = pool_hook_rpc
                 if not token_name:
                     token_name, token_symbol = await self._fetch_erc20_metadata(
                         rpc_url, token_address
@@ -691,7 +698,9 @@ class OnchainListenerWorker(BaseWorker):
                 token_uri = results[1]
 
                 if pool_task:
-                    pool_id, pool_fee = await pool_task
+                    pool_id, pool_fee, pool_hook_rpc = await pool_task
+                    if pool_hook_rpc and not pool_hook:
+                        pool_hook = pool_hook_rpc
 
                 # If preconf RPC returned empty URI, try regular RPC once
                 if not token_uri and preconf_url and preconf_url != rpc_url:
@@ -714,6 +723,8 @@ class OnchainListenerWorker(BaseWorker):
                     "pool_id": pool_id,
                     "pool_fee": pool_fee,
                 }
+                if pool_hook:
+                    rpc_update["pool_hook"] = pool_hook
                 await self.redis.publish(Channels.IPFS_METADATA_UPDATE, rpc_update)
 
             # ---- IPFS metadata fetch ----
@@ -816,22 +827,23 @@ class OnchainListenerWorker(BaseWorker):
 
     async def _fetch_pool_id_from_receipt(
         self, rpc_url: str, tx_hash: str
-    ) -> tuple[str, int]:
-        """Fetch the Uniswap V4 pool_id AND fee from the Initialize event in the TX receipt.
+    ) -> tuple[str, int, str]:
+        """Fetch the Uniswap V4 pool_id, fee, AND hooks from the Initialize event in the TX receipt.
 
         Returns:
-            (pool_id_hex, fee) — pool_id without 0x prefix; fee as int (e.g. 12000).
-            On failure returns ("", 0).
+            (pool_id_hex, fee, hooks_address) — pool_id without 0x prefix;
+            fee as int (e.g. 12000); hooks as checksummed 0x-prefixed address.
+            On failure returns ("", 0, "").
         """
         if not rpc_url or not tx_hash:
-            return ("", 0)
+            return ("", 0, "")
 
         try:
             receipt = await self._rpc_call(
                 rpc_url, "eth_getTransactionReceipt", [tx_hash]
             )
             if not receipt or "logs" not in receipt:
-                return ("", 0)
+                return ("", 0, "")
 
             for log in receipt["logs"]:
                 topics = log.get("topics", [])
@@ -845,31 +857,34 @@ class OnchainListenerWorker(BaseWorker):
                 ):
                     pool_id = topics[1][2:]  # strip 0x prefix
 
-                    # Initialize event data layout:
-                    #   [0:32]   fee           (uint24)
-                    #   [32:64]  tickSpacing    (int24)
-                    #   [64:96]  hooks          (address)
-                    #   [96:128] sqrtPriceX96   (uint160)
-                    #   [128:160] tick          (int24)
+                    # Initialize event data layout (hex chars):
+                    #   [0:64]    fee          (uint24)
+                    #   [64:128]  tickSpacing  (int24)
+                    #   [128:192] hooks        (address — last 40 hex chars)
+                    #   [192:256] sqrtPriceX96 (uint160)
+                    #   [256:320] tick         (int24)
                     fee = 0
+                    hooks = ""
                     raw = log.get("data", "0x")
                     if raw.startswith("0x"):
                         raw = raw[2:]
                     if len(raw) >= 64:
                         fee = int(raw[0:64], 16)
+                    if len(raw) >= 192:
+                        hooks = "0x" + raw[152:192]
 
                     self.logger.info(
-                        "[BANKR-CREATE] Initialize: pool=%s fee=%d",
-                        pool_id[:16], fee,
+                        "[BANKR-CREATE] Initialize: pool=%s fee=%d hooks=%s",
+                        pool_id[:16], fee, hooks[:16] if hooks else "none",
                     )
-                    return (pool_id, fee)
+                    return (pool_id, fee, hooks)
 
             self.logger.warning("[BANKR-CREATE] No Initialize event in TX %s", tx_hash[:16])
-            return ("", 0)
+            return ("", 0, "")
 
         except Exception:
             self.logger.warning("[BANKR-CREATE] Failed to fetch receipt for %s", tx_hash[:16])
-            return ("", 0)
+            return ("", 0, "")
 
     # ------------------------------------------------------------------
     # IPFS metadata fetching (Bankr Launcher tokens)
@@ -1302,11 +1317,19 @@ class OnchainListenerWorker(BaseWorker):
         return result
 
     @staticmethod
-    def _parse_pool_from_receipt_logs(logs: list[dict]) -> tuple[str, int]:
-        """Extract pool_id and pool_fee from Initialize event in receipt logs.
+    def _parse_pool_from_receipt_logs(logs: list[dict]) -> tuple[str, int, str]:
+        """Extract pool_id, pool_fee, and hooks from Initialize event in receipt logs.
 
         Eliminates the need for a separate ``eth_getTransactionReceipt`` RPC.
-        Returns (pool_id_hex_no_prefix, fee_int) or ("", 0).
+
+        Initialize event data layout (hex chars, not bytes):
+            [0:64]    fee          (uint24, padded to 32 bytes)
+            [64:128]  tickSpacing  (int24)
+            [128:192] hooks        (address — last 40 hex chars)
+            [192:256] sqrtPriceX96 (uint160)
+            [256:320] tick         (int24)
+
+        Returns (pool_id_hex_no_prefix, fee_int, hooks_address) or ("", 0, "").
         """
         for log in logs:
             topics = log.get("topics") or []
@@ -1321,13 +1344,17 @@ class OnchainListenerWorker(BaseWorker):
                 if pool_id.startswith("0x"):
                     pool_id = pool_id[2:]
                 fee = 0
+                hooks = ""
                 raw = log.get("data", "0x")
                 if isinstance(raw, str) and raw.startswith("0x"):
                     raw = raw[2:]
                 if isinstance(raw, str) and len(raw) >= 64:
                     fee = int(raw[0:64], 16)
-                return (pool_id, fee)
-        return ("", 0)
+                if isinstance(raw, str) and len(raw) >= 192:
+                    # hooks address is in chars [128:192], last 40 hex = 20 bytes
+                    hooks = "0x" + raw[152:192]
+                return (pool_id, fee, hooks)
+        return ("", 0, "")
 
     @staticmethod
     def _keccak256(data: bytes) -> bytes:
@@ -1559,10 +1586,12 @@ class OnchainListenerWorker(BaseWorker):
 
                     # 1. Parse pool_id + pool_fee from Initialize event
                     #    in the SAME receipt (eliminates eth_getTransactionReceipt)
-                    pool_id, pool_fee = self._parse_pool_from_receipt_logs(logs)
+                    pool_id, pool_fee, pool_hook = self._parse_pool_from_receipt_logs(logs)
                     if pool_id:
                         tx_metadata["pool_id"] = pool_id
                         tx_metadata["pool_fee"] = pool_fee
+                    if pool_hook:
+                        tx_metadata["pool_hook"] = pool_hook
 
                     # 2. Parse name/symbol/URI from raw TX calldata
                     calldata = self._match_flashblock_tx(tx_hash, raw_txs)

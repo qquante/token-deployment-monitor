@@ -1,0 +1,474 @@
+version: '3.8'
+
+# =============================================================================
+# BANKR MONITOR - MICROSERVICES ARCHITECTURE
+# =============================================================================
+#
+# Usage:
+#   docker-compose up -d                    # Start all services
+#   docker-compose up -d redis postgres     # Start infra only
+#   docker-compose logs -f twitter-listener # View specific logs
+#   docker-compose scale tweet-processor=3  # Scale workers
+#
+# Environment:
+#   Copy .env.example to .env and configure all required variables
+#
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # INFRASTRUCTURE
+  # ===========================================================================
+  
+  redis:
+    image: redis:7-alpine
+    container_name: bankr-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: bankr-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bankr}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bankr_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-bankr_monitor}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bankr}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # ===========================================================================
+  # LISTENERS (Single Instance Each)
+  # ===========================================================================
+
+  twitter-listener:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankr-twitter-listener
+    command: python -m workers.twitter_listener
+    environment:
+      - REDIS_HOST=redis
+      - TWITTER_API_KEY=${TWITTER_API_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  onchain-listener:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankr-onchain-listener
+    command: python -m workers.onchain_listener
+    environment:
+      - REDIS_HOST=redis
+      - ANKR_RPC_WSS=${ANKR_RPC_WSS}
+      - ANKR_RPC_HTTP=${ANKR_RPC_HTTP}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # ===========================================================================
+  # PROCESSORS (Scalable)
+  # ===========================================================================
+
+  tweet-processor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m workers.tweet_processor
+    environment:
+      - REDIS_HOST=redis
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  user-enricher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m workers.user_enricher
+    environment:
+      - REDIS_HOST=redis
+      - TWITTER_API_KEY=${TWITTER_API_KEY}
+      - ALPHAGATE_USER_ID=${ALPHAGATE_USER_ID}
+      - ALPHAGATE_SESSION_ID=${ALPHAGATE_SESSION_ID}
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # Clanker Enricher - fetches pool data immediately for new tokens
+  clanker-enricher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankr-clanker-enricher
+    command: python -m workers.clanker_enricher
+    environment:
+      - REDIS_HOST=redis
+      - ANKR_RPC_HTTP=${ANKR_RPC_HTTP}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # MOLT Agent sync worker - syncs agents from Moltbook
+  # Features: Twitter info, AlphaGate smart followers, VIP filtering, Telegram notifications
+  molt-sync:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankr-molt-sync
+    command: python -m workers.molt_sync_worker
+    environment:
+      - REDIS_HOST=redis
+      - TWITTER_API_KEY=${TWITTER_API_KEY}
+      - ALPHAGATE_USER_ID=${ALPHAGATE_USER_ID}
+      - ALPHAGATE_SESSION_ID=${ALPHAGATE_SESSION_ID}
+      - TELEGRAM_CHAT_ID_MOLT=${TELEGRAM_CHAT_ID_MOLT}
+      - TELEGRAM_CHAT_ID_MOLT_KOL=${TELEGRAM_CHAT_ID_MOLT_KOL}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # Clawnch sync worker - monitors token launches on Moltbook /clawnch
+  # Features: Links to MOLT cache, enriched notifications, inline buttons
+  clawnch-sync:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankr-clawnch-sync
+    command: python -m workers.clawnch_sync_worker
+    environment:
+      - REDIS_HOST=redis
+      - TELEGRAM_CHAT_ID_PRECLAWNCH=${TELEGRAM_CHAT_ID_PRECLAWNCH}
+      - HTTP_PROXY_CONFIG=${HTTP_PROXY_CONFIG}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # MoltX sync worker - monitors token launches on MoltX platform
+  # Features: HTML feed parsing, agent stats API, enriched notifications
+  # NOTE: Uses same Telegram channel as Moltbook (PRECLAWNCH) - differentiated by message header
+  moltx-sync:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankr-moltx-sync
+    command: python -m workers.moltx_sync_worker
+    environment:
+      - REDIS_HOST=redis
+      - TELEGRAM_CHAT_ID_PRECLAWNCH=${TELEGRAM_CHAT_ID_PRECLAWNCH}
+      - ALPHAGATE_USER_ID=${ALPHAGATE_USER_ID}
+      - ALPHAGATE_SESSION_ID=${ALPHAGATE_SESSION_ID}
+      - HTTP_PROXY_CONFIG=${HTTP_PROXY_CONFIG}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # Moltbook Clawnch sync worker - monitors token launches on Moltbook /submolts/clawnch
+  # Features: JSON API, agent profile lookup, AlphaGate enrichment
+  moltbook-sync:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankr-moltbook-sync
+    command: python -m workers.moltbook_sync_worker
+    environment:
+      - REDIS_HOST=redis
+      - TELEGRAM_CHAT_ID_PRECLAWNCH=${TELEGRAM_CHAT_ID_PRECLAWNCH}
+      - ALPHAGATE_USER_ID=${ALPHAGATE_USER_ID}
+      - ALPHAGATE_SESSION_ID=${ALPHAGATE_SESSION_ID}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # 4claw sync worker - monitors token launches on 4claw.org/b/crypto board
+  # Features: HTML scraping, thread parsing, Pre-Clawnch notifications
+  # Uses "thread:{uuid}" format for messageId linking
+  fourclaw-sync:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankr-fourclaw-sync
+    command: python -m workers.fourclaw_sync_worker
+    environment:
+      - REDIS_HOST=redis
+      - TELEGRAM_CHAT_ID_PRECLAWNCH=${TELEGRAM_CHAT_ID_PRECLAWNCH}
+      - ALPHAGATE_USER_ID=${ALPHAGATE_USER_ID}
+      - ALPHAGATE_SESSION_ID=${ALPHAGATE_SESSION_ID}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # Moltbook Tracker worker - monitors PRE-CLAWNCHs and forwards matching tokens
+  # Features: Track by twitter/ticker/name, Telegram commands in group
+  moltbook-tracker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankr-moltbook-tracker
+    command: python -m workers.moltbook_tracker_worker
+    environment:
+      - REDIS_HOST=redis
+      - TELEGRAM_TRACKER_BOT_TOKEN=${TELEGRAM_TRACKER_BOT_TOKEN}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # ===========================================================================
+  # TELEGRAM WORKERS
+  # ===========================================================================
+
+  # Progressive message handler - sends messages with live editing
+  # Uses BOT POOL for rate limiting (round-robin across multiple bots)
+  telegram-progressive:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankr-telegram-progressive
+    command: python -m workers.telegram_progressive
+    environment:
+      - REDIS_HOST=redis
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_BOT_POOL_TOKENS=${TELEGRAM_BOT_POOL_TOKENS}
+      - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
+      - TELEGRAM_PREBANKR_CHANNEL_ID=${TELEGRAM_PREBANKR_CHANNEL_ID}
+      - TELEGRAM_ADMIN_GROUP_ID=${TELEGRAM_ADMIN_GROUP_ID}
+      - TELEGRAM_ADMIN_BOT_TOKEN=${TELEGRAM_ADMIN_BOT_TOKEN}
+      - TELEGRAM_BOT_TOKEN_CLAWNCH=${TELEGRAM_BOT_TOKEN_CLAWNCH}
+      - TELEGRAM_CLAWNCH_CHANNEL_ID=${TELEGRAM_CLAWNCH_CHANNEL_ID}
+      - TELEGRAM_NEWINTERFACE_CHANNEL_ID=${TELEGRAM_NEWINTERFACE_CHANNEL_ID}
+      - TWITTER_API_KEY=${TWITTER_API_KEY}
+      - ALPHAGATE_USER_ID=${ALPHAGATE_USER_ID}
+      - ALPHAGATE_SESSION_ID=${ALPHAGATE_SESSION_ID}
+      - ANKR_RPC_HTTP=${ANKR_RPC_HTTP}
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # Static sender - fallback/legacy (can be disabled if telegram-progressive works)
+  # NOTE: MoltX uses same bot/channel as Moltbook (CLAWNCH/PRECLAWNCH)
+  telegram-sender:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m workers.telegram_sender
+    environment:
+      - REDIS_HOST=redis
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
+      - TELEGRAM_PREBANKR_CHANNEL_ID=${TELEGRAM_PREBANKR_CHANNEL_ID}
+      - TELEGRAM_TRADING_BOT_TOKEN=${TELEGRAM_TRADING_BOT_TOKEN}
+      - TELEGRAM_BOT_TOKEN_CLAWNCH=${TELEGRAM_BOT_TOKEN_CLAWNCH}
+      - TELEGRAM_CHAT_ID_PRECLAWNCH=${TELEGRAM_CHAT_ID_PRECLAWNCH}
+      - TELEGRAM_CHAT_ID_CLAWNCH=${TELEGRAM_CHAT_ID_CLAWNCH}
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  telegram-callback:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m workers.telegram_callback
+    environment:
+      - REDIS_HOST=redis
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_BOT_POOL_TOKENS=${TELEGRAM_BOT_POOL_TOKENS}
+      - TELEGRAM_PREBANKR_CHANNEL_ID=${TELEGRAM_PREBANKR_CHANNEL_ID}
+      - TELEGRAM_TRADING_BOT_TOKEN=${TELEGRAM_TRADING_BOT_TOKEN}
+      # NOTE: CLAWNCH polling moved to telegram-callback-clawnch worker
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # ISOLATED callback handler for CLAWNCH token only
+  # Solves 409 Conflict by separating polling responsibilities
+  telegram-callback-clawnch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankr-telegram-callback-clawnch
+    command: python -m workers.telegram_callback_clawnch
+    environment:
+      - REDIS_HOST=redis
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_BOT_TOKEN_CLAWNCH=${TELEGRAM_BOT_TOKEN_CLAWNCH}
+      - TELEGRAM_TRADING_BOT_TOKEN=${TELEGRAM_TRADING_BOT_TOKEN}
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # Webhook-based callback handler (recommended - faster, more reliable)
+  # Start with: docker-compose up -d telegram-webhook
+  # Then run ngrok: ngrok http 8443
+  # Then register webhook with Telegram API
+  telegram-webhook:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m workers.telegram_webhook
+    ports:
+      - "8443:8443"  # Expose for ngrok/cloudflare tunnel
+    environment:
+      - REDIS_HOST=redis
+      - WEBHOOK_PORT=8443
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_TRADING_BOT_TOKEN=${TELEGRAM_TRADING_BOT_TOKEN}
+      - TELEGRAM_BOT_TOKEN_CLAWNCH=${TELEGRAM_BOT_TOKEN_CLAWNCH}
+      - TELEGRAM_CALLBACK_BOT_TOKEN=${TELEGRAM_CALLBACK_BOT_TOKEN}
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # ===========================================================================
+  # TRADING (Single Instance - State Critical)
+  # ===========================================================================
+
+  trading-executor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankr-trading-executor
+    command: python -m workers.trading_executor
+    environment:
+      - REDIS_HOST=redis
+      - ANKR_RPC_HTTP=${ANKR_RPC_HTTP}
+      - ANKR_RPC_WSS=${ANKR_RPC_WSS}
+      - BASE_RPC_URLS=${BASE_RPC_URLS}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+  # ===========================================================================
+  # LEGACY (Single monolith - for development/testing)
+  # ===========================================================================
+
+  monolith:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bankr-monolith
+    command: python scripts/websocket_async.py
+    profiles:
+      - legacy
+    environment:
+      - TWITTER_API_KEY=${TWITTER_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
+      - TELEGRAM_PREBANKR_CHANNEL_ID=${TELEGRAM_PREBANKR_CHANNEL_ID}
+      - TELEGRAM_TRADING_BOT_TOKEN=${TELEGRAM_TRADING_BOT_TOKEN}
+      - ALPHAGATE_USER_ID=${ALPHAGATE_USER_ID}
+      - ALPHAGATE_SESSION_ID=${ALPHAGATE_SESSION_ID}
+      - ANKR_RPC_HTTP=${ANKR_RPC_HTTP}
+      - ANKR_RPC_WSS=${ANKR_RPC_WSS}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    networks:
+      - bankr-network
+
+# =============================================================================
+# VOLUMES & NETWORKS
+# =============================================================================
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  bankr-network:
+    driver: bridge

@@ -2,12 +2,15 @@
 Debug script to analyze BANKR token deployments from TX hashes.
 Full forensic analysis of each transaction.
 """
+import os
 import asyncio
 import aiohttp
 import json
 from eth_abi import decode
 
-RPC_URL = "https://rpc.ankr.com/base/[REMOVED_CREDENTIAL]"
+RPC_URL = os.environ.get("ANKR_RPC_HTTP", "")
+if not RPC_URL:
+    raise RuntimeError("Set ANKR_RPC_HTTP locally before running this integration diagnostic")
 
 # Clanker V4 contract
 CLANKER_V4 = "0xE85A59c628F7d27878ACeB4bf3b35733630083a9".lower()

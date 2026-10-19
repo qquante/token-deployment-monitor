@@ -1,6 +1,7 @@
 """
 Test Moltbook API - Replicando Headers do Browser EXATAMENTE
 """
+import os
 
 import asyncio
 import aiohttp
@@ -21,7 +22,7 @@ async def test_moltbook_api():
         "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,zh-CN;q=0.6,zh;q=0.5",
         
         # Cookies (IMPORTANTES!)
-        "cookie": "[REMOVED_CREDENTIAL]",
+        "cookie": os.environ.get("MOLTBOOK_COOKIE", ""),
         
         # Priority
         "priority": "u=1, i",

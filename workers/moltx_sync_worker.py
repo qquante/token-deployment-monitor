@@ -30,9 +30,7 @@ from src.async_clients.alphagate import AsyncAlphaGateClient
 from src.async_clients.twitter import AsyncTwitterClient
 
 
-# =============================================================================
 # HTML PARSER FOR MOLTX FEED
-# =============================================================================
 
 class MoltXPostParser(HTMLParser):
     """Parse MoltX HTML feed to extract posts."""
@@ -212,9 +210,7 @@ class MoltXSyncWorker(BaseWorker):
             
             await asyncio.sleep(self.POLL_INTERVAL)
     
-    # =========================================================================
     # FEED SYNC
-    # =========================================================================
     
     async def _sync_feed(self):
         """Fetch and process posts from MoltX feed."""
@@ -311,9 +307,7 @@ class MoltXSyncWorker(BaseWorker):
         
         self.stats["messages_processed"] += 1
     
-    # =========================================================================
     # TOKEN EXTRACTION
-    # =========================================================================
     
     def _extract_token_data(self, post: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Extract token data from !clawnch command in post content."""
@@ -364,9 +358,7 @@ class MoltXSyncWorker(BaseWorker):
         self.logger.warning(f"[MOLTX] Missing required fields: {token_data}")
         return None
     
-    # =========================================================================
     # AGENT DATA
-    # =========================================================================
     
     async def _get_agent_profile(self, agent_name: str) -> Optional[Dict[str, Any]]:
         """
@@ -497,9 +489,7 @@ class MoltXSyncWorker(BaseWorker):
         
         x_handle = x_handle.lower().lstrip("@")
         
-        # =====================================================================
         # CHECK CACHE FIRST (24h TTL) - GLOBAL CACHE SHARED WITH ALL WORKERS
-        # =====================================================================
         try:
             cached = await self.storage.get_twitter_user(x_handle)
             if cached:
@@ -515,9 +505,7 @@ class MoltXSyncWorker(BaseWorker):
         except Exception as e:
             self.logger.debug(f"[MOLTX] Twitter cache error: {e}")
         
-        # =====================================================================
         # CALL API ONLY IF NOT IN CACHE
-        # =====================================================================
         try:
             async with AsyncTwitterClient() as client:
                 # Get user info (followers, bio, verified)
@@ -544,9 +532,7 @@ class MoltXSyncWorker(BaseWorker):
         
         return {}
 
-    # =========================================================================
     # NOTIFICATION
-    # =========================================================================
     
     async def _process_token_launch(self, post: Dict[str, Any], token: Dict[str, Any]):
         """Process token launch and send notification."""
@@ -869,9 +855,7 @@ class MoltXSyncWorker(BaseWorker):
         except Exception as e:
             self.logger.error(f"[MOLTX] Telegram send error: {e}")
     
-    # =========================================================================
     # TRIGGER AUTO-BUY
-    # =========================================================================
     
     async def _check_moltx_triggers(
         self,
@@ -998,9 +982,7 @@ class MoltXSyncWorker(BaseWorker):
         except Exception as e:
             self.logger.error(f"[MOLTX TRIGGER] Notification error for user {user_id}: {e}")
     
-    # =========================================================================
     # DEDUPE
-    # =========================================================================
     
     async def _is_post_processed(self, post_id: str) -> bool:
         """Check if post was already processed."""

@@ -82,9 +82,7 @@ class MoltbookTrackerWorker(BaseWorker):
             return_exceptions=True,
         )
     
-    # =========================================================================
     # STARTUP
-    # =========================================================================
     
     async def _send_startup_message(self):
         """Send startup notification to tracker group."""
@@ -106,9 +104,7 @@ class MoltbookTrackerWorker(BaseWorker):
         await self._send_message(self.TRACKER_GROUP_ID, msg)
         self.logger.info(f"[TRACKER] Startup message sent to {self.TRACKER_GROUP_ID}")
     
-    # =========================================================================
     # TELEGRAM POLLING
-    # =========================================================================
     
     async def _poll_commands(self):
         """Poll Telegram updates for commands."""
@@ -191,9 +187,7 @@ class MoltbookTrackerWorker(BaseWorker):
         elif text == "/infomolt":
             await self._handle_infomolt()
     
-    # =========================================================================
     # COMMAND HANDLERS
-    # =========================================================================
     
     async def _handle_trackmoltbook(self, text: str):
         """Handle /trackmoltbook command."""
@@ -352,9 +346,7 @@ class MoltbookTrackerWorker(BaseWorker):
         
         await self._send_message(self.TRACKER_GROUP_ID, msg)
     
-    # =========================================================================
     # PRECLAWNCH LISTENER
-    # =========================================================================
     
     async def _listen_preclawnch(self):
         """Listen for PRE-CLAWNCH tokens and check matches."""
@@ -418,9 +410,7 @@ class MoltbookTrackerWorker(BaseWorker):
             self.stats["messages_forwarded"] += 1
             self.logger.info(f"[TRACKER] Forwarded to {self.TRACKER_GROUP_ID}")
     
-    # =========================================================================
     # TELEGRAM HELPERS
-    # =========================================================================
     
     async def _send_message(
         self,

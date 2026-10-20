@@ -765,18 +765,14 @@ class ProgressiveMessage:
         passes_molt_filter = user.get("passes_molt_filter", False)
         vip_followers = user.get("vip_followers", [])
         
-        # =================================================================
         # MOLT AGENT FILTER BANNER (if passes KOL filter)
-        # =================================================================
         if is_molt_agent and passes_molt_filter:
             lines.append("🛑🛑🛑🛑🛑🛑")
             lines.append("   <b>MOLT AGENT FILTER</b> ✅")
             lines.append("🛑🛑🛑🛑🛑🛑")
             lines.append("")
         
-        # =================================================================
         # MOLT AGENT BANNER (if applicable)
-        # =================================================================
         if is_molt_agent:
             lines.append("🟠🟠🟠🟠🟠🟠🟠🟠🟠")
             if molt_verified:
@@ -872,9 +868,7 @@ def _escape_md(text: str) -> str:
     return text
 
 
-# =============================================================================
 # Module-level convenience
-# =============================================================================
 
 _client: Optional[AsyncTelegramClient] = None
 
@@ -894,9 +888,7 @@ async def send_notification(text: str) -> Optional[int]:
     return await client.send_message(text)
 
 
-# =============================================================================
 # PRE-BANKR Message Class (HTML Formatting)
-# =============================================================================
 
 def _escape_html(text: str) -> str:
     """Escape HTML special characters."""
@@ -1123,18 +1115,14 @@ class PreBankrMessage:
         passes_molt_filter = user.get("passes_molt_filter", False)
         vip_followers = user.get("vip_followers", [])
         
-        # =================================================================
         # MOLT AGENT FILTER BANNER (if passes KOL filter)
-        # =================================================================
         if is_molt_agent and passes_molt_filter:
             lines.append("🛑🛑🛑🛑🛑🛑")
             lines.append("   <b>MOLT AGENT FILTER</b> ✅")
             lines.append("🛑🛑🛑🛑🛑🛑")
             lines.append("")
         
-        # =================================================================
         # MOLT AGENT BANNER (if applicable)
-        # =================================================================
         if is_molt_agent:
             lines.append("🟠🟠🟠🟠🟠🟠🟠🟠🟠")
             if molt_verified:
@@ -1211,9 +1199,7 @@ class PreBankrMessage:
         return "\n".join(lines)
 
 
-# =============================================================================
 # ON-CHAIN FIRST Message Class
-# =============================================================================
 
 class OnchainDeploymentMessage:
     """
@@ -1557,18 +1543,14 @@ class OnchainDeploymentMessage:
         passes_molt_filter = user.get("passes_molt_filter", False)
         vip_followers = user.get("vip_followers", [])
         
-        # =================================================================
         # MOLT AGENT FILTER BANNER (if passes KOL filter)
-        # =================================================================
         if is_molt_agent and passes_molt_filter:
             lines.append("🛑🛑🛑🛑🛑🛑")
             lines.append("   <b>MOLT AGENT FILTER</b> ✅")
             lines.append("🛑🛑🛑🛑🛑🛑")
             lines.append("")
         
-        # =================================================================
         # MOLT AGENT BANNER (if applicable)
-        # =================================================================
         if is_molt_agent:
             lines.append("🟠🟠🟠🟠🟠🟠🟠🟠🟠")
             if molt_verified:
@@ -1649,9 +1631,7 @@ class OnchainDeploymentMessage:
         return "\n".join(lines)
 
 
-# =============================================================================
 # CLAWNCH DEPLOYMENT MESSAGE (moltbook, 4claw, moltx)
-# =============================================================================
 
 class ClawnchDeploymentMessage:
     """
@@ -1761,9 +1741,7 @@ class ClawnchDeploymentMessage:
         lines.append(f"<code><b>{token_name}</b> (${token_symbol})</code> by [{platform_emoji} {self.platform.title()}]")
         lines.append("")
         
-        # =========================================================================
         # AGENT SECTION
-        # =========================================================================
         lines.append("━━━━━━━🤖 <b>AGENT</b>━━━━━━━")
         lines.append("")
         
@@ -1792,9 +1770,7 @@ class ClawnchDeploymentMessage:
             lines.append(f'🖥 <b>Other Social Profile:</b> <a href="{agent_link}">{_escape_html(self.agent_name)}</a>')
         lines.append("")
         
-        # =========================================================================
         # OWNER SECTION (if we have x_handle)
-        # =========================================================================
         if self.x_handle:
             lines.append("━━━━━━━👨🏻 <b>OWNER</b>━━━━━━━")
             lines.append("")
@@ -1843,9 +1819,7 @@ class ClawnchDeploymentMessage:
             
             lines.append("")
         
-        # =========================================================================
         # TOKEN SECTION
-        # =========================================================================
         lines.append("━━━━━━━🪙 <b>TOKEN</b>━━━━━━━")
         lines.append("")
         
@@ -1986,9 +1960,7 @@ class ClawnchDeploymentMessage:
         return str(n)
 
 
-# =============================================================================
 # TRADING CONFIG MENU BUILDERS
-# =============================================================================
 
 # Fee schedule: block offset -> fee percentage
 # Auction dura 2 blocos. Depois de expirar, fee decai em ~8 blocos.
@@ -2282,9 +2254,7 @@ Envie sua private key:
 <i>A private key é salva localmente.</i>"""
 
 
-# =============================================================================
 # TRADING CALLBACK HANDLER
-# =============================================================================
 
 class TradingCallbackHandler:
     """
@@ -2615,9 +2585,7 @@ Bloco: <b>+{config.block_offset}</b> ({fee:.1f}% fee)
         return True
 
 
-# =============================================================================
 # TRADING MESSAGE HANDLER
-# =============================================================================
 
 class TradingMessageHandler:
     """

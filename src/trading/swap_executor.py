@@ -33,9 +33,7 @@ from eth_utils import to_checksum_address
 logger = logging.getLogger(__name__)
 
 
-# =============================================================================
 # CONSTANTS - Base Mainnet
-# =============================================================================
 
 CHAIN_ID = 8453  # Base Mainnet
 
@@ -214,9 +212,7 @@ class SwapExecutor:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
     
-    # =========================================================================
     # NONCE MANAGEMENT
-    # =========================================================================
     
     async def _do_refresh_nonce(self):
         """Internal: Fetch nonce from chain (no lock, caller must hold lock)."""
@@ -280,9 +276,7 @@ class SwapExecutor:
             logger.info(f"[NONCE] Allocated {count} nonces: {base_nonce} to {base_nonce + count - 1}")
             return nonces
     
-    # =========================================================================
     # RPC CALLS
-    # =========================================================================
     
     async def _rpc_call(
         self,
@@ -376,9 +370,7 @@ class SwapExecutor:
         
         return tx_hash, rpc_used
     
-    # =========================================================================
     # POOL DATA VALIDATION
-    # =========================================================================
     
     def _validate_pool_data(
         self,
@@ -457,9 +449,7 @@ class SwapExecutor:
         
         return pool_data
     
-    # =========================================================================
     # QUOTER
-    # =========================================================================
     
     async def get_quote(
         self,
@@ -481,9 +471,7 @@ class SwapExecutor:
         logger.warning("[QUOTE] Using simplified quote - implement proper V4 quoter")
         return amount_in
     
-    # =========================================================================
     # SWAP EXECUTION
-    # =========================================================================
     
     async def swap_eth_to_token(
         self,
@@ -782,10 +770,8 @@ class SwapExecutor:
             )
         
         if use_weth:
-            # =================================================================
             # MODE: V4_SWAP only (user has WETH, uses Permit2/SETTLE_ALL)
             # This is the PROVEN working approach from successful TXs
-            # =================================================================
             logger.info("[V4] Using WETH mode (SETTLE_ALL from user wallet)")
             
             v4_swap_input = self._encode_v4_swap_actions_settle_all(
@@ -802,10 +788,8 @@ class SwapExecutor:
             commands = bytes([CMD_V4_SWAP])
             inputs = [v4_swap_input]
         else:
-            # =================================================================
             # MODE: WRAP_ETH + V4_SWAP (user sends ETH)
             # Uses SETTLE with payerIsUser=false to settle from router
-            # =================================================================
             logger.info("[V4] Using ETH mode (WRAP_ETH + SETTLE from router)")
             
             # WRAP_ETH: (address recipient, uint256 amountMin)
@@ -990,9 +974,7 @@ class SwapExecutor:
         
         return encode(["bytes", "bytes[]"], [actions, params_array])
     
-    # =========================================================================
     # WETH & PERMIT2 SETUP
-    # =========================================================================
     
     async def wrap_eth(self, amount_wei: int) -> Optional[str]:
         """
@@ -1134,9 +1116,7 @@ class SwapExecutor:
         logger.info("[SETUP] Ready for WETH swap!")
         return True
     
-    # =========================================================================
     # UTILITY METHODS
-    # =========================================================================
     
     async def get_balance(self) -> int:
         """Get ETH balance in wei."""
@@ -1178,9 +1158,7 @@ class SwapExecutor:
         return None
 
 
-# =============================================================================
 # CONVENIENCE FUNCTION
-# =============================================================================
 
 async def execute_swap(
     private_key: str,
@@ -1212,9 +1190,7 @@ async def execute_swap(
         )
 
 
-# =============================================================================
 # TEST
-# =============================================================================
 
 if __name__ == "__main__":
     import sys

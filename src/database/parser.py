@@ -12,9 +12,7 @@ import re
 from typing import Optional, Dict, Any, List, Tuple
 
 
-# =============================================================================
 # REGEX PATTERNS
-# =============================================================================
 
 PATTERNS = {
     # Pattern: "@username deployed TOKEN_NAME contract address is 0x..."
@@ -29,9 +27,7 @@ PATTERNS = {
         re.IGNORECASE
     ),
     
-    # ==========================================================================
     # FEE/REWARD ROUTING PATTERNS (Dynamic - multiple variations)
-    # ==========================================================================
     
     # Pattern 1: "fees routed to @username (0x...)" 
     "fee_routing": re.compile(
@@ -123,9 +119,7 @@ PATTERNS = {
         re.IGNORECASE
     ),
     
-    # ==========================================================================
     # OTHER PATTERNS
-    # ==========================================================================
     
     # Pattern: Extract contract address from URL
     "contract_in_url": re.compile(
@@ -165,9 +159,7 @@ PATTERNS = {
 }
 
 
-# =============================================================================
 # FEE/REWARD ROUTING EXTRACTION (Dynamic)
-# =============================================================================
 
 def extract_fee_routing(text: str) -> Dict[str, Any]:
     """
@@ -312,9 +304,7 @@ def extract_all_mentions_with_wallets(text: str) -> List[Dict[str, Any]]:
     return results
 
 
-# =============================================================================
 # MENTION EXTRACTION
-# =============================================================================
 
 def extract_all_mentions(tweet: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
@@ -441,9 +431,7 @@ def identify_from_to(tweet: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Dict[s
     return from_user, to_users
 
 
-# =============================================================================
 # DEPLOYMENT PARSING
-# =============================================================================
 
 def parse_deployment(tweet_text: str, tweet_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """
@@ -659,9 +647,7 @@ def extract_deployments_from_tweets(tweets: List[Dict[str, Any]]) -> List[Dict[s
     return deployments
 
 
-# =============================================================================
 # PRE-BANKR: Deployment Request Detection
-# =============================================================================
 
 # Keywords that indicate a deployment request
 DEPLOY_KEYWORDS = [

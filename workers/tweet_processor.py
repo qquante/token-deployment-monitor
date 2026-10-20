@@ -122,15 +122,11 @@ class TweetProcessorWorker(BaseWorker):
         
         author_lower = author.lower()
         
-        # =====================================================================
         # CASE 1: From @bankrbot (DEPLOYED notification)
-        # =====================================================================
         if author_lower == "bankrbot":
             await self._handle_bankrbot_tweet(event, raw_tweet)
         
-        # =====================================================================
         # CASE 2: Mentions @bankrbot (potential PRE-BANKR)
-        # =====================================================================
         elif "@bankrbot" in text.lower():
             await self._handle_user_tweet(event, raw_tweet)
         

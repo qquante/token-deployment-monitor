@@ -67,9 +67,7 @@ CLAWNCH_DEPLOYER_WHITELIST = {
     "0xfc426dfeae55dae2f936a592450c9ecea87a5736",  # Official Clawnch deployer (89%)
 }
 
-# =============================================================================
 # FLASHBLOCKS CONFIGURATION
-# =============================================================================
 # Enable Ankr Premium Flashblocks for faster token detection (~200ms vs ~2s)
 # Uses pendingLogs subscription to get events before block confirmation
 FLASHBLOCKS_ENABLED = os.getenv("FLASHBLOCKS_ENABLED", "true").lower() == "true"
@@ -163,10 +161,8 @@ class OnchainListenerWorker(BaseWorker):
                     block_sub_id = resp.get("result")
                     self.logger.info(f"Block subscription: {block_sub_id}")
                     
-                    # =========================================================
                     # FLASHBLOCKS: Subscribe to pendingLogs for faster detection
                     # Gets events ~200ms after sequencer vs ~2s after block
-                    # =========================================================
                     flashblock_sub_id = None
                     if FLASHBLOCKS_ENABLED:
                         await ws.send_json({
@@ -278,10 +274,8 @@ class OnchainListenerWorker(BaseWorker):
             token_address = decoded["token_address"]
             token_symbol = decoded["token_symbol"]
             
-            # =================================================================
             # DEDUPLICATION: Prevent processing same token twice
             # Flashblocks arrive first (~200ms), confirmed logs arrive later (~2s)
-            # =================================================================
             if token_address in self._processed_tokens:
                 if source == "confirmed":
                     # Already processed via flashblock - just update stats
@@ -318,9 +312,7 @@ class OnchainListenerWorker(BaseWorker):
                 if parts:
                     tweet_username = parts[-1]
             
-            # =================================================================
             # LOG PREFIX based on source and interface
-            # =================================================================
             if source == "flashblock":
                 source_tag = "[FLASH]"
                 self.stats["flashblock_tokens"] += 1
@@ -394,15 +386,11 @@ class OnchainListenerWorker(BaseWorker):
             event["image"] = decoded.get("token_image", "")
             event["context"] = decoded.get("token_context", "")
             
-            # =================================================================
             # FLASHBLOCK METADATA: Let downstream know the detection source
-            # =================================================================
             event["source"] = source
             event["is_preconfirmed"] = (source == "flashblock")
             
-            # =================================================================
             # SCAM FILTER: Block fake Bankr tokens from unauthorized deployers
-            # =================================================================
             if interface == "Bankr":
                 msg_sender = decoded.get("msg_sender", "").lower()
                 if msg_sender not in BANKR_DEPLOYER_WHITELIST:
@@ -414,9 +402,7 @@ class OnchainListenerWorker(BaseWorker):
                     self.stats["messages_processed"] += 1
                     return
             
-            # =================================================================
             # SCAM FILTER: Block fake Clawnch tokens from unauthorized deployers
-            # =================================================================
             if interface == "Clawnch":
                 msg_sender = decoded.get("msg_sender", "").lower()
                 if msg_sender not in CLAWNCH_DEPLOYER_WHITELIST:

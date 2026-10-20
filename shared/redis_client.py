@@ -99,9 +99,7 @@ class RedisClient:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
     
-    # =========================================================================
     # BASIC OPERATIONS
-    # =========================================================================
     
     async def get(self, key: str) -> Optional[str]:
         """Get string value."""
@@ -135,9 +133,7 @@ class RedisClient:
         """Set with expiry in one atomic operation."""
         return await self._client.setex(key, seconds, value)
     
-    # =========================================================================
     # HASH OPERATIONS (for objects)
-    # =========================================================================
     
     async def hset(self, key: str, mapping: Dict[str, Any]) -> int:
         """Set hash fields. Converts non-strings to JSON."""
@@ -169,9 +165,7 @@ class RedisClient:
         """Check if hash field exists."""
         return await self._client.hexists(key, field)
     
-    # =========================================================================
     # SET OPERATIONS (for indexes)
-    # =========================================================================
     
     async def sadd(self, key: str, *members: str) -> int:
         """Add to set."""
@@ -193,9 +187,7 @@ class RedisClient:
         """Get set size."""
         return await self._client.scard(key)
     
-    # =========================================================================
     # LIST OPERATIONS (for queues)
-    # =========================================================================
     
     async def lpush(self, key: str, *values: str) -> int:
         """Push to left of list."""
@@ -225,9 +217,7 @@ class RedisClient:
         """Blocking pop from right."""
         return await self._client.brpop(key, timeout=timeout)
     
-    # =========================================================================
     # PUB/SUB
-    # =========================================================================
     
     async def publish(self, channel: str, message: Any) -> int:
         """
@@ -293,9 +283,7 @@ class RedisClient:
                 logger.error(f"[REDIS] Handler error for {channel}: {e}")
 
 
-# =============================================================================
 # GLOBAL INSTANCE
-# =============================================================================
 
 _redis_client: Optional[RedisClient] = None
 

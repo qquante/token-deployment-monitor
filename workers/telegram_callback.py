@@ -262,9 +262,7 @@ class TelegramCallbackWorker(BaseWorker):
         # Get user config
         config = await self.storage.get_user_config(user_id, username)
         
-        # =====================================================================
         # CHECK IF USER IS WAITING TO INPUT WALLET KEY
-        # =====================================================================
         if self._waiting_for_key.get(user_id):
             # User clicked "Configurar Wallet" and is now sending the key
             # Delete the waiting state
@@ -285,9 +283,7 @@ class TelegramCallbackWorker(BaseWorker):
                 )
             return
         
-        # =====================================================================
         # CHECK IF USER IS WAITING FOR CUSTOM ETH INPUT
-        # =====================================================================
         if self._waiting_for_eth.get(user_id):
             del self._waiting_for_eth[user_id]
             
@@ -312,9 +308,7 @@ class TelegramCallbackWorker(BaseWorker):
                 )
             return
         
-        # =====================================================================
         # CHECK IF USER IS WAITING FOR CUSTOM GWEI INPUT
-        # =====================================================================
         if self._waiting_for_gwei.get(user_id):
             del self._waiting_for_gwei[user_id]
             
@@ -339,9 +333,7 @@ class TelegramCallbackWorker(BaseWorker):
                 )
             return
         
-        # =====================================================================
         # CHECK IF USER IS WAITING FOR TRIGGER HANDLE INPUT
-        # =====================================================================
         if self._waiting_for_trigger.get(user_id):
             del self._waiting_for_trigger[user_id]
             
@@ -373,9 +365,7 @@ class TelegramCallbackWorker(BaseWorker):
                 )
             return
         
-        # =====================================================================
         # CHECK IF USER IS WAITING FOR MOLTX HANDLE INPUT
-        # =====================================================================
         if hasattr(self, '_waiting_for_moltx_handle') and self._waiting_for_moltx_handle.get(user_id):
             del self._waiting_for_moltx_handle[user_id]
             
@@ -405,9 +395,7 @@ class TelegramCallbackWorker(BaseWorker):
                 )
             return
         
-        # =====================================================================
         # CHECK IF USER IS WAITING FOR MOLTBOOK HANDLE INPUT
-        # =====================================================================
         if hasattr(self, '_waiting_for_moltbook_handle') and self._waiting_for_moltbook_handle.get(user_id):
             del self._waiting_for_moltbook_handle[user_id]
             
@@ -437,9 +425,7 @@ class TelegramCallbackWorker(BaseWorker):
                 )
             return
         
-        # =====================================================================
         # CHECK IF USER IS WAITING FOR CUSTOM MOLTX VALUES
-        # =====================================================================
         if hasattr(self, '_waiting_for_custom_moltx_followers') and self._waiting_for_custom_moltx_followers.get(user_id):
             del self._waiting_for_custom_moltx_followers[user_id]
             try:
@@ -488,9 +474,7 @@ class TelegramCallbackWorker(BaseWorker):
                 await self._send_message(bot_token, chat_id, "❌ Valor inválido. Digite um número inteiro.")
             return
         
-        # =====================================================================
         # CHECK IF USER IS WAITING FOR CUSTOM MOLTBOOK VALUES
-        # =====================================================================
         if hasattr(self, '_waiting_for_custom_moltbook_followers') and self._waiting_for_custom_moltbook_followers.get(user_id):
             del self._waiting_for_custom_moltbook_followers[user_id]
             try:
@@ -539,9 +523,7 @@ class TelegramCallbackWorker(BaseWorker):
                 await self._send_message(bot_token, chat_id, "❌ Valor inválido. Digite um número inteiro.")
             return
         
-        # =====================================================================
         # HANDLE COMMANDS
-        # =====================================================================
         if not text.startswith("/"):
             return
         
@@ -584,9 +566,7 @@ class TelegramCallbackWorker(BaseWorker):
         
         self.stats["messages_processed"] += 1
     
-    # =========================================================================
     # LIKE HANDLERS
-    # =========================================================================
     
     async def _handle_like(
         self,
@@ -682,9 +662,7 @@ class TelegramCallbackWorker(BaseWorker):
             except Exception as e:
                 self.logger.warning(f"[LIKE] Exception updating keyboard: {e}")
     
-    # =========================================================================
     # BUY HANDLERS
-    # =========================================================================
     
     async def _handle_buy_click(
         self,
@@ -1034,9 +1012,7 @@ Bloco alvo: <b>{buy.target_block}</b>
         self.logger.info(f"[STOP] User {user_id} cancelled {cancelled} snipers")
         return cancelled
     
-    # =========================================================================
     # CONFIG HANDLERS
-    # =========================================================================
     
     async def _handle_config(
         self,
@@ -1182,9 +1158,7 @@ Exemplo: <code>@elonmusk</code> ou <code>cz_binance</code>"""
             text, keyboard = self._build_triggers_menu(config)
             await self._edit_message(bot_token, chat_id, message_id, text, keyboard)
         
-        # =====================================================================
         # TRIGGER MOLTX
-        # =====================================================================
         elif data == "cfg:trigger_moltx":
             await self._answer_callback(bot_token, callback_id)
             text, keyboard = self._build_trigger_moltx_menu(config)
@@ -1332,9 +1306,7 @@ Exemplo: <code>@elonmusk</code> ou <code>vitalik</code>"""
             text, keyboard = self._build_moltx_handles_menu(config)
             await self._edit_message(bot_token, chat_id, message_id, text, keyboard)
         
-        # =====================================================================
         # TRIGGER MOLTBOOK
-        # =====================================================================
         elif data == "cfg:trigger_moltbook":
             await self._answer_callback(bot_token, callback_id)
             text, keyboard = self._build_trigger_moltbook_menu(config)
@@ -1727,9 +1699,7 @@ Pending: {stats.get('pending_buys_waiting', 0)}"""
         
         await self._send_message(bot_token, chat_id, text)
     
-    # =========================================================================
     # MENU BUILDERS
-    # =========================================================================
     
     def _build_main_menu(self, config: UserConfig) -> tuple:
         """Build main menu text and keyboard."""
@@ -2057,9 +2027,7 @@ usando sua config padrão!
         
         return text, {"inline_keyboard": buttons}
     
-    # =========================================================================
     # TRIGGER MOLTX MENUS
-    # =========================================================================
     
     def _build_trigger_moltx_menu(self, config: UserConfig) -> tuple:
         """Build MoltX trigger menu."""
@@ -2233,9 +2201,7 @@ usará apenas os outros filtros.
         
         return text, {"inline_keyboard": buttons}
     
-    # =========================================================================
     # TRIGGER MOLTBOOK MENUS
-    # =========================================================================
     
     def _build_trigger_moltbook_menu(self, config: UserConfig) -> tuple:
         """Build MoltBook trigger menu."""
@@ -2495,9 +2461,7 @@ Auto-buy: <b>{auto_status}</b>
         
         return text, {"inline_keyboard": buttons}
     
-    # =========================================================================
     # TELEGRAM API HELPERS
-    # =========================================================================
     
     async def _answer_callback(
         self,

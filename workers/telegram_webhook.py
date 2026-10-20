@@ -138,9 +138,7 @@ class TelegramWebhookWorker(BaseWorker):
             # Still return 200 to prevent Telegram from retrying
             return web.Response(text='OK')
     
-    # =========================================================================
     # CALLBACK HANDLERS (copied from telegram_callback.py)
-    # =========================================================================
     
     async def _handle_callback(
         self,
@@ -229,9 +227,7 @@ class TelegramWebhookWorker(BaseWorker):
         elif user_id in self._waiting_for_trigger:
             await self._process_trigger_handle(bot_token, chat_id, user_id, username, text)
     
-    # =========================================================================
     # LIKE HANDLER
-    # =========================================================================
     
     async def _handle_like(
         self,
@@ -261,9 +257,7 @@ class TelegramWebhookWorker(BaseWorker):
         except Exception as e:
             self.logger.error(f"Error updating like button: {e}")
     
-    # =========================================================================
     # BUY HANDLERS
-    # =========================================================================
     
     async def _handle_buy_click(
         self,
@@ -462,9 +456,7 @@ Bloco alvo: <b>{buy.target_block}</b>
         
         await self._edit_message(bot_token, chat_id, message_id, "❌ <b>Compra cancelada.</b>")
     
-    # =========================================================================
     # CONFIG HANDLER (simplified)
-    # =========================================================================
     
     async def _handle_config(
         self,
@@ -508,9 +500,7 @@ Cole sua private key na próxima mensagem.
         
         # Add more config handlers as needed...
     
-    # =========================================================================
     # MENU BUILDERS
-    # =========================================================================
     
     def _build_main_menu(self, config):
         """Build main config menu."""
@@ -535,9 +525,7 @@ Cole sua private key na próxima mensagem.
         
         return text, keyboard
     
-    # =========================================================================
     # TELEGRAM API HELPERS
-    # =========================================================================
     
     async def _answer_callback(self, bot_token: str, callback_id: str, text: str = "", show_alert: bool = False):
         """Answer callback query to stop 'thinking' indicator."""
@@ -602,9 +590,7 @@ Cole sua private key na próxima mensagem.
         except Exception as e:
             self.logger.error(f"Delete message error: {e}")
     
-    # =========================================================================
     # HELPER HANDLERS (simplified)
-    # =========================================================================
     
     async def _send_start_message(self, bot_token: str, chat_id: int, username: str):
         """Send /start welcome message."""

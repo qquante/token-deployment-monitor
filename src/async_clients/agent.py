@@ -18,9 +18,7 @@ import aiohttp
 
 logger = logging.getLogger(__name__)
 
-# =============================================================================
 # CONFIGURATION
-# =============================================================================
 
 # Google AI API (direct)
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
@@ -31,9 +29,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-001")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# =============================================================================
 # STRICT CLASSIFICATION PROMPT
-# =============================================================================
 
 CLASSIFICATION_PROMPT = """Analyze this tweet to @bankrbot (token deployment bot on Base).
 
@@ -91,9 +87,7 @@ Return ONLY JSON:
 }}"""
 
 
-# =============================================================================
 # ASYNC AGENT CLIENT
-# =============================================================================
 
 class AsyncAgentClient:
     """
@@ -309,9 +303,7 @@ def format_agent_result_compact(result: Dict[str, Any], author: str = "") -> str
     return line
 
 
-# =============================================================================
 # Module-level convenience
-# =============================================================================
 
 _client: Optional[AsyncAgentClient] = None
 

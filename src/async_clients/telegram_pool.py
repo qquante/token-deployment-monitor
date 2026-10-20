@@ -215,10 +215,8 @@ class TelegramBotPool:
         # HTTP sessions (one per bot)
         self._sessions: Dict[str, aiohttp.ClientSession] = {}
         
-        # =======================================================================
         # BOT→MESSAGE CACHE: Track which bot sent each message for correct edits
         # Key: "channel_id:message_id" → {"token": str, "timestamp": float}
-        # =======================================================================
         self._message_bot_cache: Dict[str, Dict[str, Any]] = {}
         self._cache_lock = asyncio.Lock()
         
@@ -528,11 +526,9 @@ class TelegramBotPool:
         wait_time = await self._rate_limiter.acquire(msg.channel_id)
         self.stats["total_wait_time"] += wait_time
         
-        # =======================================================================
         # BOT SELECTION: Different strategy for sends vs edits
         # - SEND: Use round-robin and cache which bot sent
         # - EDIT: Use the same bot that sent the original message
-        # =======================================================================
         if msg.msg_type == MessageType.SEND:
             # Round-robin for new messages
             token = await self._get_next_bot()
@@ -692,9 +688,7 @@ class RateLimitError(Exception):
         super().__init__(f"Rate limited for {retry_after}s on {channel_id}")
 
 
-# =============================================================================
 # HELPER: Create pool from environment
-# =============================================================================
 
 def create_pool_from_env(
     env_var: str = "TELEGRAM_BOT_POOL_TOKENS",
@@ -742,9 +736,7 @@ def create_pool_from_env(
     )
 
 
-# =============================================================================
 # WRAPPER: Drop-in replacement for AsyncTelegramClient
-# =============================================================================
 
 class PooledTelegramClient:
     """

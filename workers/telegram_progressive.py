@@ -112,9 +112,7 @@ class TelegramProgressiveWorker(BaseWorker):
             timeout=aiohttp.ClientTimeout(total=30)
         )
         
-        # =======================================================================
         # BOT POOL SETUP (for rate-limited Bankr channel sends)
-        # =======================================================================
         # Get pool tokens (comma-separated) or fallback to single token
         pool_tokens_str = os.getenv("TELEGRAM_BOT_POOL_TOKENS", "")
         bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -154,9 +152,7 @@ class TelegramProgressiveWorker(BaseWorker):
             channel_id=prebankr_channel,
         )
         
-        # =======================================================================
         # CLAWNCH SETUP (separate bot, not pooled - lower volume)
-        # =======================================================================
         clawnch_bot_token = os.getenv("TELEGRAM_BOT_TOKEN_CLAWNCH", "")
         clawnch_channel = os.getenv("TELEGRAM_CLAWNCH_CHANNEL_ID", "") or "-1003726736391"
         if clawnch_bot_token:
@@ -277,9 +273,7 @@ class TelegramProgressiveWorker(BaseWorker):
             traceback.print_exc()
             self.stats["errors"] += 1
     
-    # =========================================================================
     # BLACKLIST COMMAND POLLING (PRE-BANKR channel)
-    # =========================================================================
     
     async def _poll_blacklist_commands(self):
         """Poll Telegram updates for blacklist commands in PRE-BANKR channel."""
@@ -354,7 +348,6 @@ class TelegramProgressiveWorker(BaseWorker):
         
         self.logger.info(f"[ADMIN CMD] Received: {text}")
         
-        # =====================================================================
         # NEW COMMAND FORMAT:
         # /blacklist bankr @handle1 @handle2       - Add handles to blacklist
         # /blacklist bankr word xxx yyy            - Add words to blacklist  
@@ -362,7 +355,6 @@ class TelegramProgressiveWorker(BaseWorker):
         # /listblacklist bankr word                - List word blacklist
         # /removeblacklist bankr {id}              - Remove handle by ID
         # /removeblacklist bankr word {id}         - Remove word by ID
-        # =====================================================================
         
         # Parse command parts
         parts = text.split()
@@ -407,9 +399,7 @@ class TelegramProgressiveWorker(BaseWorker):
         elif cmd == "/help":
             await self._cmd_help(chat_id)
     
-    # =========================================================================
     # BANKR BLACKLIST COMMANDS (Admin Group)
-    # =========================================================================
     
     async def _cmd_bankr_handle_add(self, handles: List[str], chat_id: int):
         """Handle /blacklist bankr @handle1 @handle2 command."""
@@ -617,9 +607,7 @@ class TelegramProgressiveWorker(BaseWorker):
         except Exception as e:
             self.logger.error(f"[ADMIN] Send message error: {e}")
     
-    # =========================================================================
     # ONCHAIN TOKEN HANDLER (OnChain-first flow)
-    # =========================================================================
     
     async def _handle_onchain_token(self, event: Dict[str, Any]):
         """
@@ -645,18 +633,14 @@ class TelegramProgressiveWorker(BaseWorker):
         if not token_address:
             return
         
-        # =======================================================================
         # NEW INTERFACE DETECTION - Alert if unknown interface appears
-        # =======================================================================
         interface = event.get("interface", "")
         self.logger.info(f"[ONCHAIN] Token {token_symbol} interface='{interface}' platform={platform}")
         
         # Check if this is a NEW interface
         if interface and interface not in self._seen_interfaces:
-            # =======================================================================
             # FILTER: Skip @bankrbot deployments (spam from bankrbot deployer)
             # These have description "Deployed using @bankrbot on X"
-            # =======================================================================
             metadata = event.get("metadata_parsed", {})
             description = metadata.get("description", "")
             
@@ -669,10 +653,8 @@ class TelegramProgressiveWorker(BaseWorker):
             self._seen_interfaces.add(interface)
             await self.storage.add_seen_interface(interface)
         
-        # =======================================================================
         # ROUTE: Clawnch tokens (moltbook, 4claw, moltx) to separate channel
         # FIX: Also route by platform since 4claw tokens may not have interface="Clawnch"
-        # =======================================================================
         CLAWNCH_PLATFORMS = {"4claw", "moltbook", "moltx", "clawstr"}
         is_clawnch = interface == "Clawnch" or platform.lower() in CLAWNCH_PLATFORMS
         
@@ -680,10 +662,8 @@ class TelegramProgressiveWorker(BaseWorker):
             await self._handle_clawnch_token(event)
             return  # Don't continue to Bankr flow
         
-        # =======================================================================
         # FILTER: Only process tokens with valid tweet_id (Twitter platform)
         # Farcaster and other platforms without tweet links are SKIPPED
-        # =======================================================================
         if not tweet_id:
             self.logger.debug(f"[ONCHAIN] Skipping {token_symbol} - no tweet link (platform={platform})")
             return
@@ -708,9 +688,7 @@ class TelegramProgressiveWorker(BaseWorker):
             if liked_by:
                 self.logger.info(f"  Likes: {len(liked_by)}")
         
-        # =======================================================================
         # CHECK PREBANKR_DATA for cached enriched users (INSTANT DISPLAY!)
-        # =======================================================================
         cached_data = None
         cached_from_user = None
         cached_to_users = []
@@ -732,9 +710,7 @@ class TelegramProgressiveWorker(BaseWorker):
                     self.logger.info(f"    TO: {len(cached_to_users)} users (cached)")
             
             else:
-                # =======================================================================
                 # THREAD LOOKUP FALLBACK: Navigate thread to find cache
-                # =======================================================================
                 self.logger.info(f"  [THREAD LOOKUP] Cache miss, navigating thread...")
                 cached_data = await self._lookup_thread_for_cache(tweet_id, max_levels=3)
                 
@@ -752,10 +728,8 @@ class TelegramProgressiveWorker(BaseWorker):
                         self.logger.info(f"    TO: {len(cached_to_users)} users (from thread)")
                 
                 else:
-                    # =======================================================================
                     # USERNAME CACHE FALLBACK: Extract username from tweet_url
                     # and lookup individual twitter/alphagate caches
-                    # =======================================================================
                     from_username = self._extract_username_from_url(tweet_url)
                     if from_username:
                         self.logger.info(f"  [USERNAME FALLBACK] Extracted @{from_username} from tweet_url")
@@ -809,9 +783,7 @@ class TelegramProgressiveWorker(BaseWorker):
         # Set maybe_bug flag for indicator
         onchain_msg.maybe_bug = maybe_bug
         
-        # =======================================================================
         # USE CACHED DATA FOR INSTANT DISPLAY (like websocket_async.py)
-        # =======================================================================
         if cached_from_user:
             onchain_msg.from_user = cached_from_user
             onchain_msg.twitter_loaded = True
@@ -831,9 +803,7 @@ class TelegramProgressiveWorker(BaseWorker):
         self.logger.info(f"[ONCHAIN] Sent message {message_id} (faster than Twitter!)")
         self.stats["onchain_sent"] += 1
         
-        # =======================================================================
         # FETCH CREATOR INFO in background (balance, txs)
-        # =======================================================================
         asyncio.create_task(self._fetch_and_update_creator_info(onchain_msg, creator_wallet))
         
         # Store for later update when Twitter confirms
@@ -856,9 +826,7 @@ class TelegramProgressiveWorker(BaseWorker):
         
         self.stats["messages_processed"] += 1
     
-    # =========================================================================
     # CLAWNCH TOKEN HANDLER (moltbook, 4claw, moltx)
-    # =========================================================================
     
     async def _handle_clawnch_token(self, event: Dict[str, Any]):
         """
@@ -904,9 +872,7 @@ class TelegramProgressiveWorker(BaseWorker):
         if post_id:
             self.logger.info(f"  Post ID (messageId): {post_id}")
         
-        # =========================================================================
         # FETCH CACHED DATA FROM PRE-CLAWNCH (likes, agent, twitter, alphagate)
-        # =========================================================================
         liked_by = []
         preclawnch_data = None
         molt_agent = None
@@ -1223,9 +1189,7 @@ class TelegramProgressiveWorker(BaseWorker):
         except Exception as e:
             self.logger.debug(f"[ONCHAIN] Creator info error: {e}")
     
-    # =========================================================================
     # THREAD LOOKUP FALLBACK (for cache miss on ONCHAIN)
-    # =========================================================================
     
     async def _fetch_tweet_by_id(self, tweet_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -1324,9 +1288,7 @@ class TelegramProgressiveWorker(BaseWorker):
         self.logger.info(f"  [THREAD] No cache found in thread (checked {max_levels} levels)")
         return None
     
-    # =========================================================================
     # PRE-BANKR HANDLER (Progressive)
-    # =========================================================================
     
     async def _handle_prebankr(self, event: Dict[str, Any]):
         """
@@ -1356,9 +1318,7 @@ class TelegramProgressiveWorker(BaseWorker):
         if len(self._processed) > 5000:
             self._processed = set(list(self._processed)[-2500:])
         
-        # =======================================================================
         # BLACKLIST CHECK - Skip if FROM user is blacklisted
-        # =======================================================================
         if from_username and await self.storage.is_prebankr_blacklisted(from_username):
             self.logger.info(f"[PRE-BANKR] ⛔ BLACKLISTED @{from_username} - skipping {token_symbol}")
             return
@@ -1366,9 +1326,7 @@ class TelegramProgressiveWorker(BaseWorker):
         # Get tweet text early for word blacklist check
         tweet_text = raw_tweet.get("text", "")
         
-        # =======================================================================
         # WORD BLACKLIST CHECK - Skip if token name/symbol/text contains word
-        # =======================================================================
         # Build combined text to check
         text_to_check = f"{token_name} {token_symbol} {tweet_text}"
         matched_word = await self.storage.check_prebankr_word_blacklist(text_to_check)
@@ -1529,9 +1487,7 @@ class TelegramProgressiveWorker(BaseWorker):
         self.logger.info(f"[PRE-BANKR] Complete (cached for DEPLOYED)")
         self.stats["messages_processed"] += 1
     
-    # =========================================================================
     # DEPLOYED HANDLER (Progressive)
-    # =========================================================================
     
     async def _handle_deployed(self, event: Dict[str, Any]):
         """
@@ -1577,9 +1533,7 @@ class TelegramProgressiveWorker(BaseWorker):
                 if cached_data.get("wallet_map"):
                     wallet_map = cached_data["wallet_map"]
         
-        # =======================================================================
         # CHECK FOR PENDING ON-CHAIN MESSAGE (OnChain-first flow)
-        # =======================================================================
         onchain_msg = None
         
         # Try direct match by original tweet ID
@@ -1602,9 +1556,7 @@ class TelegramProgressiveWorker(BaseWorker):
                     self.logger.info(f"[DEPLOYED] Found pending on-chain message by URL match")
                     break
         
-        # =======================================================================
         # CASE 1: UPDATE EXISTING ON-CHAIN MESSAGE
-        # =======================================================================
         if onchain_msg:
             self.logger.info(f"[DEPLOYED] Updating existing on-chain message with Twitter data")
             
@@ -1706,9 +1658,7 @@ class TelegramProgressiveWorker(BaseWorker):
             self.logger.info(f"[DEPLOYED] On-chain message updated with Twitter data")
             return
         
-        # =======================================================================
         # CASE 2: NO ON-CHAIN MESSAGE - CREATE NEW PROGRESSIVE MESSAGE (fallback)
-        # =======================================================================
         
         # Dedupe by contract using Redis (persistent across restarts)
         if contract_address:
@@ -1736,9 +1686,7 @@ class TelegramProgressiveWorker(BaseWorker):
         # Get tweet text
         tweet_text = raw_tweet.get("text", "")
         
-        # =======================================================================
         # Get cached enriched data BEFORE creating message (INSTANT DISPLAY!)
-        # =======================================================================
         cached_from = cached_data.get("enriched_from") if cached_data else None
         cached_to = cached_data.get("enriched_to", []) if cached_data else []
         
@@ -1853,9 +1801,7 @@ class TelegramProgressiveWorker(BaseWorker):
         self.logger.info(f"[DEPLOYED] Complete ({cache_status})")
         self.stats["messages_processed"] += 1
     
-    # =========================================================================
     # USER ENRICHMENT (Same as websocket_async.py)
-    # =========================================================================
     
     async def _enrich_user(
         self,
@@ -1911,9 +1857,7 @@ class TelegramProgressiveWorker(BaseWorker):
             "affiliate_label": "",
         }
         
-        # =====================================================================
         # CHECK CACHES FIRST (24h TTL each)
-        # =====================================================================
         twitter_cached = False
         alphagate_cached = False
         
@@ -1951,9 +1895,7 @@ class TelegramProgressiveWorker(BaseWorker):
         except Exception as e:
             self.logger.debug(f"[CACHE] AlphaGate check error: {e}")
         
-        # =====================================================================
         # CALL APIs ONLY FOR MISSING DATA
-        # =====================================================================
         tasks = []
         
         if not twitter_cached:
@@ -2070,9 +2012,7 @@ class TelegramProgressiveWorker(BaseWorker):
         
         return user_data
     
-    # =========================================================================
     # API CALLS (Same as user_enricher.py)
-    # =========================================================================
     
     async def _fetch_twitter_user(self, username: str) -> Optional[Dict[str, Any]]:
         """Fetch user info from Twitter API."""

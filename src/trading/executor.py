@@ -111,9 +111,7 @@ class TradingExecutor:
             except Exception as e:
                 logger.error(f"[TRADING] Notify error: {e}")
     
-    # =========================================================================
     # APPROVE BUY
-    # =========================================================================
     
     def approve_buy(
         self,
@@ -177,9 +175,7 @@ class TradingExecutor:
         """Get pending buy by tweet ID."""
         return self.pending_buys.get(tweet_id)
     
-    # =========================================================================
     # LINK TOKEN (when it goes on-chain)
-    # =========================================================================
     
     async def link_token(
         self,
@@ -228,9 +224,7 @@ ETH: <b>{buy.eth_amount}</b>
 
 Aguardando bloco...""")
     
-    # =========================================================================
     # GET AUCTION INFO
-    # =========================================================================
     
     async def get_auction_expire_block(self, pool_id: str) -> int:
         """Get auction expire block from contract."""
@@ -256,9 +250,7 @@ Aguardando bloco...""")
             logger.error(f"[TRADING] Failed to get auction block: {e}")
             return 0
     
-    # =========================================================================
     # CHECK AND EXECUTE
-    # =========================================================================
     
     async def check_and_execute(self, current_block: int):
         """
@@ -422,9 +414,7 @@ Erro: {str(e)[:100]}
 
 <i>Verifique os logs para mais detalhes.</i>""")
     
-    # =========================================================================
     # STATS
-    # =========================================================================
     
     def get_stats(self) -> dict:
         """Get trading stats."""

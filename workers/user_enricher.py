@@ -138,9 +138,7 @@ class UserEnricherWorker(BaseWorker):
         """Enrich user from multiple APIs (with 24h cache)."""
         user = EnrichedUser(username=username, wallet=wallet)
         
-        # =====================================================================
         # CHECK CACHES FIRST (24h TTL each)
-        # =====================================================================
         twitter_cached = False
         alphagate_cached = False
         
@@ -174,9 +172,7 @@ class UserEnricherWorker(BaseWorker):
         except Exception as e:
             self.logger.debug(f"[CACHE] AlphaGate check error: {e}")
         
-        # =====================================================================
         # CALL APIs ONLY FOR MISSING DATA
-        # =====================================================================
         tasks = []
         
         if not twitter_cached:

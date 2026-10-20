@@ -15,9 +15,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ============================================================================
 # TWITTER API TEST
-# ============================================================================
 
 TWITTER_API_KEY = os.getenv("TWITTER_API_KEY", "")
 TWITTER_BASE_URL = "https://api.twitterapi.io"
@@ -117,9 +115,7 @@ async def test_twitter_user_about(username: str):
                 return None
 
 
-# ============================================================================
 # MOLTBOOK API TEST
-# ============================================================================
 
 MOLTBOOK_API = "https://www.moltbook.com/api/v1/agents/profile"
 
@@ -180,9 +176,7 @@ async def test_moltbook_agent(agent_name: str):
                 return None
 
 
-# ============================================================================
 # MAIN
-# ============================================================================
 
 async def main():
     print("\n" + "="*70)

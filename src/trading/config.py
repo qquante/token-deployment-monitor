@@ -14,9 +14,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# =============================================================================
 # FEE SCHEDULE - SIMPLES: BLOCO + FEE%
-# =============================================================================
 # Auction dura 2 blocos. Depois de expirar, fee decai em ~8 blocos.
 
 FEE_SCHEDULE = {
@@ -43,9 +41,7 @@ def get_fee_for_block(blocks_after_expire: int) -> float:
         return 66.7
 
 
-# =============================================================================
 # TRADING CONFIG (Global)
-# =============================================================================
 
 @dataclass
 class TradingConfig:
@@ -70,9 +66,7 @@ class TradingConfig:
         self.rpc_wss = os.getenv("ANKR_RPC_WSS", self.rpc_wss)
 
 
-# =============================================================================
 # USER CONFIG (Per-user)
-# =============================================================================
 
 @dataclass
 class UserConfig:
@@ -118,9 +112,7 @@ class UserConfig:
         return d
 
 
-# =============================================================================
 # USER CONFIG STORAGE
-# =============================================================================
 
 # In-memory storage (user_id -> UserConfig)
 _user_configs: Dict[int, UserConfig] = {}
@@ -204,9 +196,7 @@ def _load_user_config(user_id: int):
         logger.error(f"[TRADING] Failed to load config for user {user_id}: {e}")
 
 
-# =============================================================================
 # MENU BUILDERS
-# =============================================================================
 
 def build_main_menu_text(config: UserConfig) -> str:
     """Build main menu message text."""

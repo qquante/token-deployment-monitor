@@ -392,9 +392,7 @@ class Database:
         cursor.execute("SELECT 1 FROM tweets WHERE id = ?", (tweet_id,))
         return cursor.fetchone() is not None
     
-    # =============================================================================
     # LIKES METHODS
-    # =============================================================================
     
     def add_like(self, tweet_id: str, telegram_user_id: str, 
                  telegram_username: Optional[str] = None,
@@ -473,9 +471,7 @@ class Database:
         )
         return [dict(row) for row in cursor.fetchall()]
     
-    # =============================================================================
     # USER STATS METHODS (Deploys Received)
-    # =============================================================================
     
     def increment_deploys_received(self, username: str, count: int = 1) -> int:
         """Increment deploys_received for a user. Returns new count."""
@@ -545,9 +541,7 @@ class Database:
             cursor.execute("SELECT * FROM user_stats ORDER BY deploys_received DESC")
         return [dict(row) for row in cursor.fetchall()]
     
-    # =============================================================================
     # BANKR TWEETS METHODS (Backfill)
-    # =============================================================================
     
     def insert_bankr_tweet(self, tweet: Dict[str, Any]) -> bool:
         """Insert a bankr tweet for backfill processing."""

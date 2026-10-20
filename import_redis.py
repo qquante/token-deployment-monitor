@@ -58,9 +58,7 @@ async def import_all(
         "indexes_rebuilt": 0,
     }
     
-    # =========================================================================
     # 1. USERS (CRITICAL)
-    # =========================================================================
     print("=" * 60)
     print("IMPORTING USERS (critical)")
     print("=" * 60)
@@ -115,9 +113,7 @@ async def import_all(
         await redis.close()
         return stats
     
-    # =========================================================================
     # 2. PENDING BUYS (CRITICAL)
-    # =========================================================================
     print("=" * 60)
     print("IMPORTING PENDING BUYS")
     print("=" * 60)
@@ -150,9 +146,7 @@ async def import_all(
     print(f"✅ Imported {stats['pending_buys']} pending buys")
     print()
     
-    # =========================================================================
     # 3. MOLTTRACKS (CRITICAL)
-    # =========================================================================
     print("=" * 60)
     print("IMPORTING MOLTTRACKS")
     print("=" * 60)
@@ -181,9 +175,7 @@ async def import_all(
     print(f"✅ Imported {stats['molttracks']} molttracks")
     print()
     
-    # =========================================================================
     # 4. BLACKLISTS (CRITICAL)
-    # =========================================================================
     print("=" * 60)
     print("IMPORTING BLACKLISTS")
     print("=" * 60)
@@ -233,9 +225,7 @@ async def import_all(
     print(f"✅ Imported {stats['word_blacklist']} blacklisted words")
     print()
     
-    # =========================================================================
     # 5. LIKES
-    # =========================================================================
     print("=" * 60)
     print("IMPORTING LIKES")
     print("=" * 60)
@@ -251,9 +241,7 @@ async def import_all(
     print(f"✅ Imported {stats['likes']} like sets")
     print()
     
-    # =========================================================================
     # CACHE DATA (skip if --skip-cache)
-    # =========================================================================
     
     if skip_cache:
         print("--skip-cache flag set, skipping cache data")
@@ -261,9 +249,7 @@ async def import_all(
         await redis.close()
         return stats
     
-    # =========================================================================
     # 6. TOKENS (cache)
-    # =========================================================================
     print("=" * 60)
     print("IMPORTING TOKENS (cache)")
     print("=" * 60)
@@ -284,9 +270,7 @@ async def import_all(
     print(f"✅ Imported {stats['tokens']} tokens")
     print()
     
-    # =========================================================================
     # 7. ENRICHED USERS (cache)
-    # =========================================================================
     print("=" * 60)
     print("IMPORTING ENRICHED USERS (cache)")
     print("=" * 60)
@@ -301,9 +285,7 @@ async def import_all(
     print(f"✅ Imported {stats['enriched_users']} enriched users")
     print()
     
-    # =========================================================================
     # 8. MOLT AGENTS (cache)
-    # =========================================================================
     print("=" * 60)
     print("IMPORTING MOLT AGENTS (cache)")
     print("=" * 60)
@@ -329,9 +311,7 @@ async def import_all(
     print(f"✅ Imported {stats['molt_agents']} molt agents")
     print()
     
-    # =========================================================================
     # 9. POOLS (cache)
-    # =========================================================================
     print("=" * 60)
     print("IMPORTING POOLS (cache)")
     print("=" * 60)
@@ -346,9 +326,7 @@ async def import_all(
     print(f"✅ Imported {stats['pools']} pools")
     print()
     
-    # =========================================================================
     # 10. PRE-CLAWNCH (temporary)
-    # =========================================================================
     print("=" * 60)
     print("IMPORTING PRE-CLAWNCH")
     print("=" * 60)
@@ -374,9 +352,7 @@ async def import_all(
     print(f"✅ Imported {stats['preclawnch']} pre-clawnch tokens")
     print()
     
-    # =========================================================================
     # 11. PRE-BANKR DATA (temporary)
-    # =========================================================================
     print("=" * 60)
     print("IMPORTING PRE-BANKR DATA")
     print("=" * 60)
@@ -391,9 +367,7 @@ async def import_all(
     print(f"✅ Imported {stats['prebankr_data']} pre-bankr data")
     print()
     
-    # =========================================================================
     # 12. SEEN INTERFACES
-    # =========================================================================
     print("=" * 60)
     print("IMPORTING SEEN INTERFACES")
     print("=" * 60)
@@ -406,9 +380,7 @@ async def import_all(
     print(f"✅ Imported {stats['seen_interfaces']} seen interfaces")
     print()
     
-    # =========================================================================
     # 13. NOTIFIED CONTRACTS
-    # =========================================================================
     print("=" * 60)
     print("IMPORTING NOTIFIED CONTRACTS")
     print("=" * 60)
@@ -423,9 +395,7 @@ async def import_all(
     
     await redis.close()
     
-    # =========================================================================
     # SUMMARY
-    # =========================================================================
     print("=" * 60)
     print("IMPORT COMPLETE" + (" (DRY RUN)" if dry_run else ""))
     print("=" * 60)

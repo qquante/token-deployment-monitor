@@ -126,9 +126,7 @@ class MoltbookSyncWorker(BaseWorker):
             
             await asyncio.sleep(self.POLL_INTERVAL)
     
-    # =========================================================================
     # POSTS SYNC - DUAL ENDPOINT
-    # =========================================================================
     
     async def _sync_submolt(self):
         """Fetch from both /submolts/clawnch AND /posts, merge and deduplicate."""
@@ -271,9 +269,7 @@ class MoltbookSyncWorker(BaseWorker):
         
         self.stats["messages_processed"] += 1
     
-    # =========================================================================
     # TOKEN EXTRACTION
-    # =========================================================================
     
     def _extract_token_data(self, post: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Extract token data from !clawnch command in post content."""
@@ -343,9 +339,7 @@ class MoltbookSyncWorker(BaseWorker):
         self.logger.warning(f"[PRECLAWNCH] Missing required fields: {token_data}")
         return None
     
-    # =========================================================================
     # AGENT DATA
-    # =========================================================================
     
     async def _get_agent_profile(self, agent_name: str) -> Optional[Dict[str, Any]]:
         """
@@ -476,9 +470,7 @@ class MoltbookSyncWorker(BaseWorker):
         
         x_handle = x_handle.lower().lstrip("@")
         
-        # =====================================================================
         # CHECK CACHE FIRST (24h TTL) - GLOBAL CACHE SHARED WITH ALL WORKERS
-        # =====================================================================
         try:
             cached = await self.storage.get_twitter_user(x_handle)
             if cached:
@@ -494,9 +486,7 @@ class MoltbookSyncWorker(BaseWorker):
         except Exception as e:
             self.logger.debug(f"[PRECLAWNCH] Twitter cache error: {e}")
         
-        # =====================================================================
         # CALL API ONLY IF NOT IN CACHE
-        # =====================================================================
         try:
             async with AsyncTwitterClient() as client:
                 # Get user info (followers, bio, verified)
@@ -523,9 +513,7 @@ class MoltbookSyncWorker(BaseWorker):
         
         return {}
 
-    # =========================================================================
     # NOTIFICATION
-    # =========================================================================
     
     async def _process_token_launch(self, post: Dict[str, Any], token: Dict[str, Any]):
         """Process token launch and send notification."""
@@ -859,9 +847,7 @@ class MoltbookSyncWorker(BaseWorker):
         except Exception as e:
             self.logger.error(f"[PRECLAWNCH] Telegram send error: {e}")
     
-    # =========================================================================
     # TRIGGER AUTO-BUY
-    # =========================================================================
     
     async def _check_moltbook_triggers(
         self,
@@ -988,9 +974,7 @@ class MoltbookSyncWorker(BaseWorker):
         except Exception as e:
             self.logger.error(f"[MOLTBOOK TRIGGER] Notification error for user {user_id}: {e}")
     
-    # =========================================================================
     # DEDUPE
-    # =========================================================================
     
     async def _is_post_processed(self, post_id: str) -> bool:
         """Check if post was already processed."""

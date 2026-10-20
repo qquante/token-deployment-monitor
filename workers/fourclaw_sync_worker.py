@@ -29,9 +29,7 @@ from src.async_clients.alphagate import AsyncAlphaGateClient
 from src.async_clients.twitter import AsyncTwitterClient
 
 
-# =============================================================================
 # HTML PARSER FOR 4CLAW BOARD
-# =============================================================================
 
 class FourClawThreadParser(HTMLParser):
     """
@@ -294,9 +292,7 @@ class FourClawSyncWorker(BaseWorker):
             
             await asyncio.sleep(self.POLL_INTERVAL)
     
-    # =========================================================================
     # BOARD SYNC
-    # =========================================================================
     
     async def _sync_board(self):
         """Fetch and process threads from 4claw crypto board."""
@@ -436,9 +432,7 @@ class FourClawSyncWorker(BaseWorker):
         
         return ''  # URL but not a valid handle
     
-    # =========================================================================
     # ALPHAGATE DATA
-    # =========================================================================
     
     async def _get_alphagate_data(self, x_handle: str) -> Dict[str, Any]:
         """Get AlphaGate data (R, C, SF, followers, bio, created_at) for a Twitter handle."""
@@ -499,9 +493,7 @@ class FourClawSyncWorker(BaseWorker):
         
         x_handle = x_handle.lower().lstrip("@")
         
-        # =====================================================================
         # CHECK CACHE FIRST (24h TTL) - GLOBAL CACHE SHARED WITH ALL WORKERS
-        # =====================================================================
         try:
             cached = await self.storage.get_twitter_user(x_handle)
             if cached:
@@ -517,9 +509,7 @@ class FourClawSyncWorker(BaseWorker):
         except Exception as e:
             self.logger.debug(f"[4CLAW] Twitter cache error: {e}")
         
-        # =====================================================================
         # CALL API ONLY IF NOT IN CACHE
-        # =====================================================================
         try:
             async with AsyncTwitterClient() as client:
                 # Get user info (followers, bio, verified)
@@ -546,9 +536,7 @@ class FourClawSyncWorker(BaseWorker):
         
         return {}
 
-    # =========================================================================
     # PROCESS TOKEN LAUNCH
-    # =========================================================================
     
     async def _process_token_launch(self, thread: Dict[str, Any], token: Dict[str, str]):
         """Process token launch and send notification."""
@@ -858,9 +846,7 @@ class FourClawSyncWorker(BaseWorker):
             self.logger.error(f"[4CLAW] Telegram send error: {e}")
             self.stats["errors"] += 1
 
-    # =========================================================================
     # DEDUPE
-    # =========================================================================
 
     async def _is_thread_processed(self, thread_id: str) -> bool:
         """Check if thread was already processed."""
@@ -873,9 +859,7 @@ class FourClawSyncWorker(BaseWorker):
         await self.redis.expire("4claw_threads_processed", 86400 * 30)
 
 
-# =============================================================================
 # MODULE ENTRY POINT
-# =============================================================================
 
 if __name__ == "__main__":
     FourClawSyncWorker.main()

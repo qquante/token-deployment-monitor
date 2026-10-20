@@ -30,9 +30,7 @@ from workers.base import BaseWorker
 from shared.pubsub import Channels
 
 
-# =============================================================================
 # VIP ACCOUNTS - Smart followers that qualify for KOL filter
-# =============================================================================
 
 VIP_ACCOUNTS = {
     "elonmusk", "base", "antoniogm", "baseapp", "dimabuterin",
@@ -141,9 +139,7 @@ class MoltSyncWorker(BaseWorker):
             return_exceptions=True,
         )
     
-    # =========================================================================
     # MOLTBOOK SYNC
-    # =========================================================================
     
     async def _moltbook_loop(self):
         """Periodically sync agents from Moltbook."""
@@ -274,9 +270,7 @@ class MoltSyncWorker(BaseWorker):
         """Check if handle is in verified set."""
         return x_handle.lower() in self._verified_handles
     
-    # =========================================================================
     # VERIFICATION SYNC
-    # =========================================================================
     
     async def _verification_loop(self):
         """Periodically check for verification tweets."""
@@ -348,9 +342,7 @@ class MoltSyncWorker(BaseWorker):
         if new_verified > 0:
             self.logger.info(f"[MOLT] {new_verified} new verifications")
     
-    # =========================================================================
     # TWITTER API
-    # =========================================================================
     
     async def _fetch_twitter_user(self, username: str) -> Optional[Dict[str, Any]]:
         """Fetch Twitter user info (followers, etc.)."""
@@ -371,9 +363,7 @@ class MoltSyncWorker(BaseWorker):
         
         return None
     
-    # =========================================================================
     # ALPHAGATE API
-    # =========================================================================
     
     async def _fetch_smart_followers(
         self,
@@ -442,9 +432,7 @@ class MoltSyncWorker(BaseWorker):
         
         return len(all_usernames), all_usernames, vips_found
     
-    # =========================================================================
     # TELEGRAM NOTIFICATIONS
-    # =========================================================================
     
     def _format_agent_message(
         self,
@@ -562,9 +550,7 @@ class MoltSyncWorker(BaseWorker):
             self.logger.error(f"[MOLT] Telegram send error: {e}")
             return False
     
-    # =========================================================================
     # UTILITIES
-    # =========================================================================
     
     async def check_molt_agent(self, x_handle: str) -> Optional[Dict[str, Any]]:
         """

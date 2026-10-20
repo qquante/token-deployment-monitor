@@ -14,9 +14,7 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
-# =============================================================================
 # FEE SCHEDULE
-# =============================================================================
 
 FEE_SCHEDULE = {
     0: 66.7,   # Auction acabou de expirar
@@ -43,9 +41,7 @@ def get_fee_for_block(blocks_after_expire: int) -> float:
         return 66.7
 
 
-# =============================================================================
 # USER CONFIG
-# =============================================================================
 
 @dataclass
 class UserConfig:
@@ -84,9 +80,7 @@ class UserConfig:
     # Buy TTL: max time (minutes) to wait for token to go on-chain (0 = forever)
     buy_ttl_minutes: int = 60
     
-    # =========================================================================
     # MoltX Triggers (auto-buy when conditions match)
-    # =========================================================================
     moltx_trigger_enabled: bool = False
     moltx_trigger_handles: List[str] = field(default_factory=list)  # Specific handles to snipe
     moltx_trigger_min_followers: int = 0  # Min Twitter followers (0 = disabled)
@@ -94,9 +88,7 @@ class UserConfig:
     moltx_trigger_min_smart_followers: int = 0  # Min smart followers (0 = disabled)
     moltx_trigger_x_verified: bool = False  # Only buy from verified accounts
     
-    # =========================================================================
     # MoltBook Triggers (auto-buy when conditions match)
-    # =========================================================================
     moltbook_trigger_enabled: bool = False
     moltbook_trigger_handles: List[str] = field(default_factory=list)  # Specific handles to snipe
     moltbook_trigger_min_followers: int = 0  # Min Twitter followers (0 = disabled)
@@ -206,9 +198,7 @@ class UserConfig:
         return f"user:{user_id}"
 
 
-# =============================================================================
 # PENDING BUY
-# =============================================================================
 
 @dataclass
 class PendingBuy:
@@ -338,9 +328,7 @@ class PendingBuy:
         return f"buy:{user_id}:{tweet_id}"
 
 
-# =============================================================================
 # TOKEN INFO (cached from on-chain/twitter)
-# =============================================================================
 
 @dataclass
 class TokenInfo:
@@ -435,9 +423,7 @@ class TokenInfo:
         return f"token:{tweet_id}"
 
 
-# =============================================================================
 # ENRICHED USER (cached API data)
-# =============================================================================
 
 @dataclass
 class EnrichedUser:

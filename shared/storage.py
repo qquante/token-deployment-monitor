@@ -35,9 +35,7 @@ class Storage:
     def __init__(self, redis: RedisClient):
         self.redis = redis
     
-    # =========================================================================
     # USER CONFIG
-    # =========================================================================
     
     async def get_user_config(self, user_id: int, username: str = "") -> UserConfig:
         """Get user config, creating default if not exists."""
@@ -76,9 +74,7 @@ class Storage:
         key = UserConfig.redis_key(user_id)
         return await self.redis.exists(key)
     
-    # =========================================================================
     # SNIPER HANDLES (Trigger by @handle)
-    # =========================================================================
     
     async def add_sniper_handle(self, user_id: int, handle: str) -> bool:
         """
@@ -149,9 +145,7 @@ class Storage:
         user_ids = await self.redis.smembers(f"sniper_handle:{handle}")
         return [int(uid) for uid in user_ids]
     
-    # =========================================================================
     # MOLTX TRIGGERS (auto-buy on MoltX posts)
-    # =========================================================================
     
     async def set_moltx_trigger_enabled(self, user_id: int, enabled: bool) -> bool:
         """Enable/disable MoltX trigger for user."""
@@ -285,9 +279,7 @@ class Storage:
         
         return conditions_met
     
-    # =========================================================================
     # MOLTBOOK TRIGGERS (auto-buy on MoltBook posts)
-    # =========================================================================
     
     async def set_moltbook_trigger_enabled(self, user_id: int, enabled: bool) -> bool:
         """Enable/disable MoltBook trigger for user."""
@@ -421,9 +413,7 @@ class Storage:
         
         return conditions_met
     
-    # =========================================================================
     # PENDING BUYS
-    # =========================================================================
     
     async def approve_buy(
         self,
@@ -530,9 +520,7 @@ class Storage:
             if buy.target_block > 0 and buy.target_block <= block_number
         ]
     
-    # =========================================================================
     # ATOMIC TRADE LOCK
-    # =========================================================================
     
     async def try_acquire_trade_lock(self, buy_key: str, ttl_seconds: int = 120) -> bool:
         """
@@ -689,9 +677,7 @@ class Storage:
             executed_at=datetime.now().isoformat(),
         )
     
-    # =========================================================================
     # TOKEN INFO
-    # =========================================================================
     
     async def save_token_info(self, token: TokenInfo) -> bool:
         """Save token info to Redis."""
@@ -727,9 +713,7 @@ class Storage:
             return None
         return await self.get_token_info(tweet_id)
     
-    # =========================================================================
     # PRE-CLAWNCH TOKENS (MoltX, Moltbook, 4claw)
-    # =========================================================================
     
     # TTL for pre-clawnch tokens (30 days - longer to ensure linking works)
     PRECLAWNCH_TTL = 86400 * 30
@@ -821,9 +805,7 @@ class Storage:
         """
         return await self.get_pending_buys_by_tweet(post_id)
     
-    # =========================================================================
     # ENRICHED USERS (cache)
-    # =========================================================================
     
     async def save_enriched_user(self, user: EnrichedUser) -> bool:
         """Save enriched user to cache."""
@@ -844,9 +826,7 @@ class Storage:
         
         return EnrichedUser.from_redis(data)
     
-    # =========================================================================
     # ALPHAGATE CACHE (24 hours - R, C, Smart Followers)
-    # =========================================================================
     
     async def save_alphagate_data(
         self,
@@ -882,9 +862,7 @@ class Storage:
             "smart_followers": int(data.get("smart_followers", 0)),
         }
     
-    # =========================================================================
     # TWITTER CACHE (24 hours - user info + about)
-    # =========================================================================
     
     async def save_twitter_user(
         self,
@@ -938,9 +916,7 @@ class Storage:
             "affiliate_label": data.get("affiliate_label", ""),
         }
     
-    # =========================================================================
     # LIKES (for PRE-BANKR)
-    # =========================================================================
     
     async def add_like(
         self,
@@ -981,9 +957,7 @@ class Storage:
         members = await self.redis.smembers(key)
         return [m.split(":", 1)[1] for m in members if ":" in m]
     
-    # =========================================================================
     # NOTIFIED CONTRACTS (dedupe)
-    # =========================================================================
     
     async def has_notified_contract(self, contract: str) -> bool:
         """Check if contract was already notified."""
@@ -994,9 +968,7 @@ class Storage:
         await self.redis.sadd("notified_contracts", contract.lower())
         return True
     
-    # =========================================================================
     # PRE-BANKR DATA CACHE (for instant DEPLOYED display)
-    # =========================================================================
     
     PREBANKR_TTL = 10800  # 3 hours - PRE-BANKR cache for linking to DEPLOYED
     
@@ -1106,9 +1078,7 @@ class Storage:
         
         return True
     
-    # =========================================================================
     # MOLT AGENTS
-    # =========================================================================
     
     MOLT_AGENT_TTL = 86400  # 24 hours cache
     
@@ -1275,9 +1245,7 @@ class Storage:
         logger.debug(f"[STORAGE] Agent ID not in reverse index: {agent_id[:8]}...")
         return None
     
-    # =========================================================================
     # CLANKER POOL DATA (cached by clanker_enricher worker)
-    # =========================================================================
     
     POOL_CACHE_TTL = 86400 * 7  # 7 days - pool params don't change
     
@@ -1358,9 +1326,7 @@ class Storage:
         key = f"pool:{token_address.lower()}"
         return await self.redis.exists(key)
     
-    # =========================================================================
     # STATS
-    # =========================================================================
     
     async def get_stats(self) -> Dict[str, Any]:
         """Get overall storage stats."""
@@ -1373,9 +1339,7 @@ class Storage:
             "molt_agents": await self.redis.scard("molt_agents_index"),
         }
     
-    # =========================================================================
     # SEEN INTERFACES (for new interface detection)
-    # =========================================================================
     
     # Default known interfaces - will be populated on first run
     DEFAULT_INTERFACES = {
@@ -1423,9 +1387,7 @@ class Storage:
         """Check if interface has been seen before."""
         return await self.redis.sismember("seen_interfaces", interface)
     
-    # =========================================================================
     # MOLTBOOK TRACKING
-    # =========================================================================
     
     async def add_molttrack(self, track_type: str, value: str) -> int:
         """
@@ -1541,9 +1503,7 @@ class Storage:
         exists = await self.redis.exists(f"molttrack:{track_type}:{value}")
         return bool(exists)
     
-    # =========================================================================
     # PRE-BANKR DEV BLACKLIST (with IDs)
-    # =========================================================================
     
     async def add_prebankr_blacklist(self, handle: str) -> int:
         """
@@ -1690,9 +1650,7 @@ class Storage:
         logger.info(f"[BLACKLIST] Cleared PRE-BANKR blacklist ({count} handles)")
         return count
     
-    # =========================================================================
     # PRE-BANKR WORD BLACKLIST
-    # =========================================================================
     
     async def add_prebankr_word_blacklist(self, word: str) -> int:
         """
@@ -1787,9 +1745,7 @@ class Storage:
         return None
 
 
-# =============================================================================
 # GLOBAL INSTANCE
-# =============================================================================
 
 _storage: Optional[Storage] = None
 
